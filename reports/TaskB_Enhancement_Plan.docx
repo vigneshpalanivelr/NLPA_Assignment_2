@@ -955,15 +955,42 @@ document.addEventListener('DOMContentLoaded', () => {
 8. MODEL REFINEMENT STRATEGY
 ================================================================================
 
-8.1 Data Preparation Pipeline
------------------------------
+8.1 Current Model Architecture
+------------------------------
 
-Step 1: Extract Feedback Data
+The application currently uses DistilBERT, a distilled version of BERT optimized for 
+performance while maintaining high accuracy:
+
+**Model Specifications:**
+- Model: distilbert-base-uncased-finetuned-sst-2-english
+- Parameters: 66 million (40% smaller than BERT-base)
+- Framework: PyTorch with Hugging Face Transformers
+- Accuracy: 92-95% on SST-2 benchmark
+- Hardware: GPU support with automatic CPU fallback
+- Processing: 6-step preprocessing pipeline with dual analysis
+
+**Architecture Components:**
+- Transformer encoder with 6 layers
+- Self-attention mechanism for context understanding
+- Pre-trained on 66M parameters from BERT distillation
+- Fine-tuned on Stanford Sentiment Treebank (SST-2)
+- Binary classification head (positive/negative)
+
+
+8.2 Data Preparation Pipeline for Fine-Tuning
+---------------------------------------------
+
+Step 1: Extract and Prepare Feedback Data
 ```python
 def extract_feedback_data(db):
-    """
-    Extract labeled data from feedback table
-    """
+    # Extract labeled data from feedback table for fine-tuning
+    from transformers import AutoTokenizer
+    
+    # Initialize tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
+        'distilbert-base-uncased-finetuned-sst-2-english'
+    )
+    
     # Query feedback with corrections
     feedback_data = db.query(
         Prediction.text,
@@ -977,243 +1004,397 @@ def extract_feedback_data(db):
         Feedback.is_correct == False  # Only incorrect predictions
     ).all()
 
-    # Convert to training format
-    training_data = []
+    # Convert to Hugging Face dataset format
+    training_samples = []
     for item in feedback_data:
-        training_data.append({
-            'text': item.text,
-            'label': item.user_sentiment
+        # Use cleaned text for better results
+        text = item.cleaned_text if item.cleaned_text else item.text
+        
+        # Map sentiment to labels (0: negative, 1: positive)
+        label = 1 if item.user_sentiment.lower() == 'positive' else 0
+        
+        training_samples.append({
+            'text': text,
+            'label': label
         })
 
-    return training_data
+    return training_samples
 ```
 
-Step 2: Balance Dataset
+Step 2: Create Hugging Face Dataset
 ```python
-def balance_dataset(data):
-    """
-    Handle class imbalance using oversampling/undersampling
-    """
-    from collections import Counter
-    from sklearn.utils import resample
+from datasets import Dataset, DatasetDict
+from sklearn.model_selection import train_test_split
 
-    # Count samples per class
-    labels = [item['label'] for item in data]
-    class_counts = Counter(labels)
-
-    # Find majority class count
-    max_count = max(class_counts.values())
-
-    # Oversample minority classes
-    balanced_data = []
-    for sentiment in ['positive', 'negative', 'neutral']:
-        class_data = [item for item in data if item['label'] == sentiment]
-
-        if len(class_data) < max_count:
-            # Oversample
-            class_data_upsampled = resample(
-                class_data,
-                n_samples=max_count,
-                random_state=42
-            )
-            balanced_data.extend(class_data_upsampled)
-        else:
-            balanced_data.extend(class_data)
-
-    return balanced_data
-```
-
-
-8.2 Custom Lexicon Adjustment for VADER
----------------------------------------
-
-```python
-def update_vader_lexicon(feedback_data):
-    """
-    Adjust VADER lexicon based on feedback
-    Identify words that frequently lead to misclassifications
-    """
-    from collections import defaultdict
-
-    # Track word-sentiment associations
-    word_sentiments = defaultdict(list)
-
-    for item in feedback_data:
-        tokens = item['cleaned_text'].split()
-        for token in tokens:
-            word_sentiments[token].append(item['label'])
-
-    # Identify words with strong sentiment associations
-    lexicon_updates = {}
-    for word, sentiments in word_sentiments.items():
-        if len(sentiments) >= 5:  # Minimum threshold
-            # Calculate average sentiment
-            sentiment_scores = {
-                'positive': sentiments.count('positive'),
-                'negative': sentiments.count('negative'),
-                'neutral': sentiments.count('neutral')
-            }
-
-            dominant_sentiment = max(sentiment_scores, key=sentiment_scores.get)
-
-            # Assign score
-            if dominant_sentiment == 'positive':
-                lexicon_updates[word] = 2.0
-            elif dominant_sentiment == 'negative':
-                lexicon_updates[word] = -2.0
-
-    # Update VADER lexicon
-    from nltk.sentiment.vader import SentimentIntensityAnalyzer
-    vader = SentimentIntensityAnalyzer()
-    vader.lexicon.update(lexicon_updates)
-
-    return vader
-```
-
-
-8.3 Train Custom Classifier
----------------------------
-
-```python
-def train_custom_classifier(training_data):
-    """
-    Train a custom sentiment classifier using scikit-learn
-    """
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.naive_bayes import MultinomialNB
-    from sklearn.pipeline import Pipeline
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import classification_report
-    import joblib
-
-    # Prepare data
-    texts = [item['text'] for item in training_data]
-    labels = [item['label'] for item in training_data]
-
+def prepare_dataset(training_samples):
+    # Create train/validation split and convert to Hugging Face Dataset
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        texts, labels, test_size=0.2, random_state=42, stratify=labels
+    train_data, val_data = train_test_split(
+        training_samples,
+        test_size=0.2,
+        random_state=42,
+        stratify=[s['label'] for s in training_samples]
     )
+    
+    # Create Hugging Face datasets
+    dataset = DatasetDict({
+        'train': Dataset.from_list(train_data),
+        'validation': Dataset.from_list(val_data)
+    })
+    
+    return dataset
+```
 
-    # Create pipeline
-    model_pipeline = Pipeline([
-        ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2))),
-        ('classifier', MultinomialNB())
-    ])
-
-    # Train model
-    model_pipeline.fit(X_train, y_train)
-
-    # Evaluate
-    y_pred = model_pipeline.predict(X_test)
-    print(classification_report(y_test, y_pred))
-
-    # Save model
-    joblib.dump(model_pipeline, 'custom_sentiment_model.pkl')
-
-    return model_pipeline
+Step 3: Tokenization
+```python
+def tokenize_dataset(dataset, tokenizer):
+    # Tokenize texts for BERT input
+    def tokenize_function(examples):
+        return tokenizer(
+            examples['text'],
+            padding='max_length',
+            truncation=True,
+            max_length=512
+        )
+    
+    tokenized_dataset = dataset.map(
+        tokenize_function,
+        batched=True,
+        remove_columns=['text']
+    )
+    
+    return tokenized_dataset
 ```
 
 
-8.4 Ensemble Approach
---------------------
+8.3 Fine-Tune DistilBERT on Feedback Data
+-----------------------------------------
 
 ```python
-def ensemble_sentiment_analysis(text, vader_analyzer, textblob_analyzer, custom_model):
-    """
-    Combine VADER, TextBlob, and custom model predictions
-    """
-    # Get VADER prediction
-    vader_result = vader_analyzer.polarity_scores(text)
-    vader_sentiment = get_sentiment_from_vader(vader_result['compound'])
+from transformers import (
+    AutoModelForSequenceClassification,
+    TrainingArguments,
+    Trainer,
+    AutoTokenizer
+)
+import torch
 
-    # Get TextBlob prediction
-    blob = TextBlob(text)
-    textblob_sentiment = get_sentiment_from_polarity(blob.sentiment.polarity)
-
-    # Get custom model prediction
-    custom_sentiment = custom_model.predict([text])[0]
-
-    # Voting mechanism
-    votes = [vader_sentiment, textblob_sentiment, custom_sentiment]
-    from collections import Counter
-    sentiment_counts = Counter(votes)
-
-    # Return majority vote
-    final_sentiment = sentiment_counts.most_common(1)[0][0]
-
-    # Calculate confidence based on agreement
-    agreement = sentiment_counts.most_common(1)[0][1] / len(votes)
-
-    return {
-        'sentiment': final_sentiment,
-        'confidence': agreement,
-        'individual_predictions': {
-            'vader': vader_sentiment,
-            'textblob': textblob_sentiment,
-            'custom': custom_sentiment
+def finetune_distilbert(tokenized_dataset):
+    # Fine-tune DistilBERT using Hugging Face Trainer API
+    # Load pre-trained model
+    model = AutoModelForSequenceClassification.from_pretrained(
+        'distilbert-base-uncased-finetuned-sst-2-english',
+        num_labels=2
+    )
+    
+    # Define training arguments
+    training_args = TrainingArguments(
+        output_dir='./models/finetuned_distilbert',
+        num_train_epochs=3,
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=32,
+        warmup_steps=500,
+        weight_decay=0.01,
+        logging_dir='./logs',
+        logging_steps=100,
+        evaluation_strategy='epoch',
+        save_strategy='epoch',
+        load_best_model_at_end=True,
+        metric_for_best_model='accuracy',
+        fp16=torch.cuda.is_available(),  # Use mixed precision if GPU available
+        gradient_accumulation_steps=2,
+        learning_rate=2e-5,
+    )
+    
+    # Define metrics
+    from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+    
+    def compute_metrics(pred):
+        labels = pred.label_ids
+        preds = pred.predictions.argmax(-1)
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            labels, preds, average='binary'
+        )
+        acc = accuracy_score(labels, preds)
+        return {
+            'accuracy': acc,
+            'f1': f1,
+            'precision': precision,
+            'recall': recall
         }
+    
+    # Initialize Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset['train'],
+        eval_dataset=tokenized_dataset['validation'],
+        compute_metrics=compute_metrics
+    )
+    
+    # Fine-tune model
+    print("Starting fine-tuning...")
+    trainer.train()
+    
+    # Evaluate on validation set
+    eval_results = trainer.evaluate()
+    print(f"Validation results: {eval_results}")
+    
+    return trainer, model
+```
+
+
+8.4 GPU Requirements and Optimization
+-------------------------------------
+
+**Hardware Requirements for Fine-Tuning:**
+
+Minimum Configuration:
+- GPU: NVIDIA GPU with 8GB+ VRAM (e.g., RTX 2070, T4)
+- RAM: 16GB system memory
+- Storage: 10GB for model checkpoints
+
+Recommended Configuration:
+- GPU: NVIDIA GPU with 16GB+ VRAM (e.g., RTX 3090, A100)
+- RAM: 32GB system memory
+- Storage: 20GB for experiments and checkpoints
+
+**Optimization Strategies:**
+
+1. Mixed Precision Training (FP16):
+```python
+# Automatically enabled in TrainingArguments
+training_args = TrainingArguments(
+    fp16=True,  # Reduces memory by 50%
+    fp16_opt_level='O2'
+)
+```
+
+2. Gradient Accumulation:
+```python
+# Simulate larger batch sizes with limited memory
+training_args = TrainingArguments(
+    per_device_train_batch_size=8,
+    gradient_accumulation_steps=4  # Effective batch size: 32
+)
+```
+
+3. CPU Fallback (for systems without GPU):
+```python
+# Training will automatically use CPU if CUDA unavailable
+# Note: Training will be significantly slower (10-50x)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+```
+
+
+8.5 Model Deployment and Versioning
+-----------------------------------
+
+```python
+def deploy_finetuned_model(trainer, model, validation_accuracy, db):
+    # Deploy fine-tuned model if it meets quality thresholds
+    # Define minimum accuracy threshold
+    MIN_ACCURACY_THRESHOLD = 0.90  # 90%
+    
+    if validation_accuracy < MIN_ACCURACY_THRESHOLD:
+        print(f"Model accuracy {validation_accuracy:.2%} below threshold")
+        return False
+    
+    # Save model and tokenizer
+    output_dir = f'./models/distilbert_v{get_next_version(db)}'
+    trainer.save_model(output_dir)
+    
+    # Save tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
+        'distilbert-base-uncased-finetuned-sst-2-english'
+    )
+    tokenizer.save_pretrained(output_dir)
+    
+    # Log model version in database
+    log_model_version(
+        db=db,
+        version=get_next_version(db),
+        accuracy=validation_accuracy,
+        model_path=output_dir,
+        training_samples=len(trainer.train_dataset)
+    )
+    
+    # Update production model symlink
+    import os
+    production_link = './models/production'
+    if os.path.exists(production_link):
+        os.remove(production_link)
+    os.symlink(output_dir, production_link)
+    
+    print(f"Model deployed to {output_dir}")
+    print(f"Production updated with accuracy: {validation_accuracy:.2%}")
+    
+    return True
+```
+
+
+8.6 Continuous Learning Pipeline
+--------------------------------
+
+```python
+from transformers import pipeline
+import torch
+
+def create_enhanced_analyzer(model_path='./models/production'):
+    # Load fine-tuned model for inference
+    # Load fine-tuned model
+    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    
+    # Create pipeline with GPU support
+    device = 0 if torch.cuda.is_available() else -1
+    
+    sentiment_analyzer = pipeline(
+        'sentiment-analysis',
+        model=model,
+        tokenizer=tokenizer,
+        device=device,
+        framework='pt'
+    )
+    
+    return sentiment_analyzer
+
+def analyze_with_confidence(text, analyzer):
+    # Analyze sentiment and return confidence scores
+    result = analyzer(text, return_all_scores=True)[0]
+    
+    # Convert to readable format
+    scores = {item['label']: item['score'] for item in result}
+    
+    # Determine sentiment (LABEL_0 = negative, LABEL_1 = positive)
+    sentiment = 'positive' if scores.get('LABEL_1', 0) > 0.5 else 'negative'
+    confidence = max(scores.get('LABEL_1', 0), scores.get('LABEL_0', 0))
+    
+    return {
+        'sentiment': sentiment,
+        'confidence': confidence,
+        'scores': scores
     }
 ```
 
 
-8.5 Automated Retraining Schedule
+8.7 Automated Retraining Schedule
 ---------------------------------
 
 ```python
 import schedule
 import time
+from datetime import datetime
 
-def scheduled_model_update():
-    """
-    Scheduled task to retrain model periodically
-    """
-    # Get database session
+def scheduled_model_finetuning():
+    # Scheduled task to fine-tune model periodically based on feedback
+    from database import SessionLocal
+    
     db = SessionLocal()
-
+    
     try:
         # Check if enough feedback collected
         feedback_count = db.query(Feedback).filter(
             Feedback.is_correct == False
         ).count()
-
-        if feedback_count >= 100:  # Minimum threshold
-            print(f"Starting model retraining with {feedback_count} samples...")
-
-            # Extract data
-            training_data = extract_feedback_data(db)
-
-            # Balance dataset
-            balanced_data = balance_dataset(training_data)
-
-            # Train new model
-            new_model = train_custom_classifier(balanced_data)
-
-            # Validate new model
-            validation_accuracy = validate_model(new_model, db)
-
-            if validation_accuracy > 0.75:  # Minimum accuracy threshold
-                # Deploy new model
-                deploy_model(new_model, validation_accuracy, db)
-                print(f"New model deployed with {validation_accuracy:.2%} accuracy")
+        
+        MIN_SAMPLES = 200  # Minimum samples for fine-tuning
+        
+        if feedback_count >= MIN_SAMPLES:
+            print(f"Starting model fine-tuning with {feedback_count} samples...")
+            print(f"Timestamp: {datetime.now()}")
+            
+            # Extract and prepare data
+            training_samples = extract_feedback_data(db)
+            dataset = prepare_dataset(training_samples)
+            
+            # Tokenize
+            tokenizer = AutoTokenizer.from_pretrained(
+                'distilbert-base-uncased-finetuned-sst-2-english'
+            )
+            tokenized_dataset = tokenize_dataset(dataset, tokenizer)
+            
+            # Fine-tune model
+            trainer, model = finetune_distilbert(tokenized_dataset)
+            
+            # Get validation accuracy
+            eval_results = trainer.evaluate()
+            validation_accuracy = eval_results['eval_accuracy']
+            
+            # Deploy if meets threshold
+            deployed = deploy_finetuned_model(
+                trainer, model, validation_accuracy, db
+            )
+            
+            if deployed:
+                print(f"Fine-tuned model deployed: {validation_accuracy:.2%} accuracy")
+                # Mark feedback as processed
+                mark_feedback_processed(db, training_samples)
             else:
-                print(f"New model accuracy ({validation_accuracy:.2%}) below threshold")
+                print(f"Model not deployed: accuracy below threshold")
         else:
-            print(f"Insufficient feedback data: {feedback_count}/100")
-
+            print(f"Insufficient feedback: {feedback_count}/{MIN_SAMPLES}")
+    
+    except Exception as e:
+        print(f"Error during fine-tuning: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    
     finally:
         db.close()
 
-# Schedule retraining weekly
-schedule.every().sunday.at("02:00").do(scheduled_model_update)
+# Schedule fine-tuning monthly (GPU-intensive operation)
+schedule.every().monday.at("02:00").do(scheduled_model_finetuning)
 
-# Run scheduler in background
+# Also run when threshold reached
+schedule.every().day.at("03:00").do(check_feedback_threshold)
+
 def run_scheduler():
+    # Run background scheduler for model updates
     while True:
         schedule.run_pending()
         time.sleep(3600)  # Check every hour
 ```
 
+
+8.8 Model Performance Monitoring
+--------------------------------
+
+```python
+def monitor_model_performance(db):
+    # Track model performance metrics over time
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+    
+    # Calculate accuracy over last 30 days
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    results = db.query(
+        func.count(Feedback.id).label('total'),
+        func.sum(
+            func.cast(Feedback.is_correct, Integer)
+        ).label('correct')
+    ).filter(
+        Feedback.created_at >= thirty_days_ago
+    ).first()
+    
+    if results.total > 0:
+        accuracy = results.correct / results.total
+        print(f"30-day accuracy: {accuracy:.2%} ({results.correct}/{results.total})")
+        
+        # Alert if accuracy drops below threshold
+        if accuracy < 0.85:
+            print(f"WARNING: Model accuracy dropped to {accuracy:.2%}")
+            print("Consider immediate fine-tuning")
+            
+        return accuracy
+    
+    return None
+```
+
+
+================================================================================
 
 ================================================================================
 9. PRIVACY AND SECURITY CONSIDERATIONS

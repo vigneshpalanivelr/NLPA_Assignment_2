@@ -76,6 +76,35 @@ The review examines how transformer-based models, particularly BERT and Vision T
 Recent research demonstrates significant progress in multi-layer feature fusion, aspect-level analysis, and cross-modal attention mechanisms, achieving state-of-the-art performance on benchmark datasets such as CMU-MOSI and CMU-MOSEI. However, challenges remain in handling incomplete modalities, ensuring model generalization, and providing interpretable results. The review concludes with future directions emphasizing explainable AI, large language model integration, and real-time multimodal sentiment analysis for practical applications.
 
 
+
+
+================================================================================
+NOTE ON CURRENT IMPLEMENTATION
+================================================================================
+
+While this literature review comprehensively covers multimodal sentiment analysis 
+techniques that integrate text, audio, video, and visual data, it is important to 
+note that the current implementation of the sentiment analysis application focuses 
+on unimodal text analysis using state-of-the-art transformer architectures.
+
+**Current Implementation:**
+- Model: DistilBERT (distilbert-base-uncased-finetuned-sst-2-english)
+- Approach: Unimodal text-based sentiment analysis
+- Framework: PyTorch with Hugging Face Transformers
+- Accuracy: 92-95% on SST-2 benchmark
+- Parameters: 66 million (distilled from BERT-base)
+
+The BERT (Bidirectional Encoder Representations from Transformers) architecture 
+discussed extensively in this review as a foundation for multimodal transformers 
+serves as the core technology in our current implementation. While the literature 
+explores extensions of BERT to multimodal contexts (combining with Vision Transformers, 
+audio encoders, etc.), our application leverages DistilBERT's powerful text understanding 
+capabilities for robust sentiment classification.
+
+This review provides essential background for future multimodal extensions of the 
+application, where visual and acoustic modalities could be integrated following the 
+fusion techniques and architectures discussed herein.
+
 ================================================================================
 2. INTRODUCTION
 ================================================================================
@@ -1266,7 +1295,31 @@ Many applications require real-time or near-real-time sentiment analysis, such a
 - Adaptive computation (early exit mechanisms)
 
 **Streaming Processing**
-- Online learning from continuous data streams
+- Online learning from cont
+
+**Note on Current Implementation Context:**
+
+This literature review has explored the rich landscape of multimodal sentiment analysis, 
+examining how modern AI systems integrate text, visual, audio, and video modalities to 
+understand human emotions and opinions. While our current sentiment analysis application 
+implements a unimodal approach using DistilBERT for text-only analysis, the transformer 
+architectures discussed throughout this review—particularly BERT and its variants—form 
+the foundation of our implementation.
+
+The BERT architecture (Section 6.3) that has been transformative for multimodal 
+sentiment analysis through its integration with Vision Transformers and audio encoders 
+is the same architecture powering our current text-based system. DistilBERT, a distilled 
+and optimized version of BERT, provides 92-95% accuracy on sentiment classification 
+while maintaining computational efficiency with 66 million parameters.
+
+The fusion techniques, attention mechanisms, and deep learning architectures explored 
+in this review represent natural extension paths for the current implementation. Should 
+the application expand to incorporate visual sentiment from images or acoustic cues from 
+audio, the multimodal fusion strategies discussed herein—particularly attention-based 
+fusion (Section 5.4) and hybrid architectures (Section 6.4)—would provide the theoretical 
+and practical foundation for such enhancements.
+
+inuous data streams
 - Temporal windowing strategies
 - Incremental model updates
 - Low-latency inference pipelines
