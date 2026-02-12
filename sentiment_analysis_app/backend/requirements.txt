@@ -1,0 +1,14 @@
+# FastAPI and server dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# NLP libraries
+nltk==3.8.1
+textblob==0.17.1
+
+# Data validation
+pydantic==2.5.0
+
+# Additional utilities
+aiofiles==23.2.1

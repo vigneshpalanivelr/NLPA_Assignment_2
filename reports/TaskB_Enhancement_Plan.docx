@@ -1,0 +1,1396 @@
+SENTIMENT ANALYSIS APPLICATION
+Real-Time Feedback Enhancement Plan
+
+Assignment 2 - PS-9 | Task B
+M.Tech. in AIML - NLP Applications
+Course Code: S1-25_AIMLCZG519
+Work Integrated Learning Programmes Division
+BITS Pilani
+
+
+TABLE OF CONTENTS
+
+1. Introduction
+2. Enhancement Overview
+3. System Architecture for Feedback Integration
+4. Step-by-Step Implementation Plan
+5. Database Design
+6. Backend Implementation Details
+7. Frontend Implementation Details
+8. Model Refinement Strategy
+9. Privacy and Security Considerations
+10. Testing and Validation
+11. Deployment Strategy
+12. Conclusion
+
+
+================================================================================
+1. INTRODUCTION
+================================================================================
+
+1.1 Purpose
+-----------
+This document provides a detailed step-by-step process to enhance the existing Sentiment Analysis Application with a real-time feedback feature. This enhancement will allow users to provide immediate input on the accuracy of sentiment analysis results, which can then be used to continuously refine and improve the model's performance.
+
+1.2 Objectives
+--------------
+- Collect user feedback on sentiment analysis accuracy
+- Store feedback data for model improvement
+- Implement real-time feedback mechanism
+- Develop model refinement pipeline
+- Maintain system performance and user experience
+
+1.3 Benefits
+------------
+- Continuous model improvement through active learning
+- Better accuracy for domain-specific text
+- User engagement and satisfaction
+- Data-driven model refinement
+- Reduced dependency on static training data
+
+
+================================================================================
+2. ENHANCEMENT OVERVIEW
+================================================================================
+
+2.1 Feature Description
+----------------------
+The real-time feedback feature allows users to:
+1. Review the sentiment analysis result
+2. Indicate if the prediction is correct or incorrect
+3. Provide the correct sentiment if prediction is wrong
+4. Optionally provide comments or reasoning
+
+The system will:
+1. Store feedback in a database
+2. Track prediction accuracy metrics
+3. Identify patterns in misclassifications
+4. Periodically retrain or adjust the model
+5. Display confidence and accuracy statistics to users
+
+2.2 Key Components
+-----------------
+1. Feedback Collection Interface
+2. Feedback Storage Database
+3. Feedback API Endpoints
+4. Model Retraining Pipeline
+5. Analytics Dashboard
+6. Accuracy Metrics Tracking
+
+
+================================================================================
+3. SYSTEM ARCHITECTURE FOR FEEDBACK INTEGRATION
+================================================================================
+
+3.1 Updated Architecture Diagram
+--------------------------------
+
+[Previous Architecture]
+User → Frontend → FastAPI → Sentiment Analyzer → Results
+
+[Enhanced Architecture]
+User → Frontend → FastAPI → Sentiment Analyzer → Results
+                    ↓           ↓
+              Feedback API  Database
+                    ↓           ↓
+              Model Trainer ← Feedback Store
+                    ↓
+              Updated Model → Sentiment Analyzer
+
+
+3.2 New Components
+-----------------
+
+A. Database Layer:
+   - PostgreSQL or SQLite for feedback storage
+   - Tables: feedback, predictions, model_versions, accuracy_metrics
+
+B. Feedback Service:
+   - Collect and validate feedback
+   - Store in database
+   - Generate analytics
+
+C. Model Retraining Service:
+   - Aggregate feedback data
+   - Prepare training dataset
+   - Retrain/fine-tune model
+   - Deploy updated model
+
+D. Analytics Service:
+   - Calculate accuracy metrics
+   - Generate reports
+   - Identify improvement areas
+
+
+================================================================================
+4. STEP-BY-STEP IMPLEMENTATION PLAN
+================================================================================
+
+PHASE 1: Database Setup (Week 1)
+---------------------------------
+
+Step 1.1: Choose Database Technology
+- Option A: SQLite (simple, file-based, good for development)
+- Option B: PostgreSQL (robust, scalable, production-ready)
+- Recommendation: Start with SQLite, migrate to PostgreSQL for production
+
+Step 1.2: Design Database Schema
+- Create tables for feedback storage
+- Set up indexes for query optimization
+- Implement data validation constraints
+
+Step 1.3: Install Database Dependencies
+```bash
+pip install sqlalchemy databases asyncpg aiosqlite
+```
+
+Step 1.4: Create Database Models
+- Define ORM models using SQLAlchemy
+- Implement database connection handling
+- Create migration scripts
+
+
+PHASE 2: Backend API Development (Week 1-2)
+-------------------------------------------
+
+Step 2.1: Create Feedback Models
+- Define Pydantic models for feedback validation
+- Implement request/response schemas
+- Add validation rules
+
+Step 2.2: Implement Feedback API Endpoints
+- POST /api/feedback - Submit feedback
+- GET /api/feedback/stats - Get accuracy statistics
+- GET /api/feedback/recent - Get recent feedback
+- GET /api/predictions/{id} - Get specific prediction
+
+Step 2.3: Implement Feedback Storage Logic
+- Save feedback to database
+- Associate feedback with original prediction
+- Track user sessions (anonymously)
+- Implement error handling
+
+Step 2.4: Create Prediction Logging
+- Log all predictions before returning results
+- Store prediction ID, text, result, timestamp
+- Generate unique prediction IDs
+
+
+PHASE 3: Frontend UI Development (Week 2)
+-----------------------------------------
+
+Step 3.1: Design Feedback UI Component
+- Create feedback buttons below results
+- Design feedback form for corrections
+- Add visual feedback confirmation
+
+Step 3.2: Implement Feedback Interaction
+- "Correct" and "Incorrect" buttons
+- Dropdown for correct sentiment (if incorrect)
+- Optional comment field
+- Submission handling
+
+Step 3.3: Update Results Display
+- Show prediction ID
+- Display model accuracy statistics
+- Show confidence with context
+
+Step 3.4: Add Feedback Confirmation
+- Success message after submission
+- Thank you message
+- Show how feedback helps
+
+
+PHASE 4: Analytics and Monitoring (Week 3)
+------------------------------------------
+
+Step 4.1: Implement Accuracy Tracking
+- Calculate overall accuracy
+- Track accuracy by sentiment type
+- Compute confusion matrix
+- Monitor accuracy trends over time
+
+Step 4.2: Create Analytics Dashboard
+- Display accuracy metrics
+- Show feedback volume
+- Visualize common misclassifications
+- Track improvement over time
+
+Step 4.3: Implement Reporting
+- Generate daily/weekly reports
+- Email notifications for low accuracy
+- Export feedback data
+
+
+PHASE 5: Model Refinement Strategy (Week 3-4)
+---------------------------------------------
+
+Step 5.1: Feedback Data Preparation
+- Extract feedback labeled data
+- Clean and preprocess feedback text
+- Balance dataset (handle class imbalance)
+- Split into train/validation sets
+
+Step 5.2: Implement Model Update Mechanism
+- Fine-tune VADER with custom lexicon adjustments
+- Train custom classifier on feedback data
+- Ensemble with existing VADER and TextBlob
+- A/B testing framework for model comparison
+
+Step 5.3: Automated Retraining Pipeline
+- Schedule periodic retraining (weekly/monthly)
+- Minimum feedback threshold (e.g., 100 samples)
+- Validation before deployment
+- Rollback mechanism if accuracy decreases
+
+Step 5.4: Model Versioning
+- Track model versions in database
+- Store model performance metrics
+- Enable model rollback if needed
+- Audit trail for model changes
+
+
+PHASE 6: Testing and Validation (Week 4)
+----------------------------------------
+
+Step 6.1: Unit Testing
+- Test feedback API endpoints
+- Test database operations
+- Test model retraining logic
+
+Step 6.2: Integration Testing
+- End-to-end feedback flow
+- Database connectivity
+- Model update pipeline
+
+Step 6.3: User Acceptance Testing
+- Test feedback UI usability
+- Validate feedback submission
+- Verify analytics accuracy
+
+Step 6.4: Performance Testing
+- Load testing for feedback API
+- Database query optimization
+- Model inference performance
+
+
+PHASE 7: Deployment (Week 5)
+----------------------------
+
+Step 7.1: Database Migration
+- Set up production database
+- Run migration scripts
+- Configure backups
+
+Step 7.2: Deploy Updated Application
+- Deploy backend with feedback APIs
+- Deploy updated frontend
+- Configure environment variables
+
+Step 7.3: Monitoring Setup
+- Application logging
+- Error tracking
+- Performance monitoring
+
+Step 7.4: Documentation
+- User guide for feedback feature
+- API documentation updates
+- Admin guide for model retraining
+
+
+================================================================================
+5. DATABASE DESIGN
+================================================================================
+
+5.1 Table: predictions
+----------------------
+Purpose: Store all sentiment predictions made by the system
+
+Columns:
+- id (VARCHAR PRIMARY KEY): Unique prediction identifier (UUID)
+- text (TEXT): Original input text
+- cleaned_text (TEXT): Preprocessed text
+- predicted_sentiment (VARCHAR): Model's prediction (positive/negative/neutral)
+- vader_compound (FLOAT): VADER compound score
+- vader_positive (FLOAT): VADER positive score
+- vader_negative (FLOAT): VADER negative score
+- vader_neutral (FLOAT): VADER neutral score
+- textblob_polarity (FLOAT): TextBlob polarity score
+- textblob_subjectivity (FLOAT): TextBlob subjectivity score
+- confidence_score (FLOAT): Overall confidence (0-1)
+- final_sentiment (VARCHAR): Final combined sentiment
+- model_version (VARCHAR): Version of model used
+- session_id (VARCHAR): Anonymous user session ID
+- created_at (TIMESTAMP): When prediction was made
+- ip_hash (VARCHAR): Hashed IP (for abuse prevention, optional)
+
+Indexes:
+- created_at (for time-based queries)
+- predicted_sentiment (for analytics)
+- session_id (for user tracking)
+
+
+5.2 Table: feedback
+-------------------
+Purpose: Store user feedback on predictions
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Feedback ID
+- prediction_id (VARCHAR FOREIGN KEY): References predictions.id
+- is_correct (BOOLEAN): Whether prediction was correct
+- user_sentiment (VARCHAR): User's correction (if is_correct=false)
+- confidence_rating (INTEGER): User's confidence (1-5, optional)
+- comment (TEXT): Optional user comment
+- helpful (BOOLEAN): Whether user found analysis helpful
+- session_id (VARCHAR): Anonymous user session
+- created_at (TIMESTAMP): When feedback was submitted
+
+Indexes:
+- prediction_id (foreign key)
+- is_correct (for accuracy calculations)
+- created_at (for trending analysis)
+
+
+5.3 Table: model_versions
+-------------------------
+Purpose: Track different versions of the sentiment model
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Version ID
+- version_name (VARCHAR UNIQUE): Version identifier (e.g., "v1.0.0")
+- description (TEXT): What changed in this version
+- training_data_count (INTEGER): Number of feedback samples used
+- accuracy (FLOAT): Validation accuracy
+- precision (FLOAT): Precision score
+- recall (FLOAT): Recall score
+- f1_score (FLOAT): F1 score
+- deployment_status (VARCHAR): active/inactive/testing
+- created_at (TIMESTAMP): When version was created
+- deployed_at (TIMESTAMP): When version went live
+
+Indexes:
+- version_name (unique)
+- deployment_status (for active model lookup)
+
+
+5.4 Table: accuracy_metrics
+---------------------------
+Purpose: Store aggregated accuracy metrics over time
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Metric ID
+- date (DATE): Date of metrics
+- total_predictions (INTEGER): Total predictions made
+- feedback_count (INTEGER): Total feedback received
+- feedback_rate (FLOAT): Percentage with feedback
+- correct_predictions (INTEGER): Number marked correct
+- incorrect_predictions (INTEGER): Number marked incorrect
+- accuracy (FLOAT): Overall accuracy
+- positive_accuracy (FLOAT): Accuracy for positive predictions
+- negative_accuracy (FLOAT): Accuracy for negative predictions
+- neutral_accuracy (FLOAT): Accuracy for neutral predictions
+- model_version (VARCHAR): Model version used
+
+Indexes:
+- date (for time-series queries)
+- model_version (for version comparison)
+
+
+================================================================================
+6. BACKEND IMPLEMENTATION DETAILS
+================================================================================
+
+6.1 Database Connection (database.py)
+-------------------------------------
+
+```python
+# Database configuration and connection management
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from databases import Database
+import os
+
+# Database URL - SQLite for development, PostgreSQL for production
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./sentiment_feedback.db"
+)
+
+# Create SQLAlchemy engine
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
+
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create declarative base
+Base = declarative_base()
+
+# Create async database instance for FastAPI
+database = Database(DATABASE_URL)
+
+# Database connection events
+async def connect_db():
+    await database.connect()
+
+async def disconnect_db():
+    await database.disconnect()
+```
+
+
+6.2 Database Models (models.py)
+-------------------------------
+
+```python
+# SQLAlchemy ORM models for database tables
+from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey
+from sqlalchemy.sql import func
+from database import Base
+import uuid
+
+class Prediction(Base):
+    """
+    Stores all sentiment predictions made by the system
+    """
+    __tablename__ = "predictions"
+
+    # Unique identifier for each prediction
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    # Text data
+    text = Column(Text, nullable=False)
+    cleaned_text = Column(Text)
+
+    # Prediction results
+    predicted_sentiment = Column(String(20))
+    vader_compound = Column(Float)
+    vader_positive = Column(Float)
+    vader_negative = Column(Float)
+    vader_neutral = Column(Float)
+    textblob_polarity = Column(Float)
+    textblob_subjectivity = Column(Float)
+    confidence_score = Column(Float)
+    final_sentiment = Column(String(20))
+
+    # Metadata
+    model_version = Column(String(50), default="v1.0.0")
+    session_id = Column(String(100))
+    ip_hash = Column(String(64))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Feedback(Base):
+    """
+    Stores user feedback on predictions
+    """
+    __tablename__ = "feedback"
+
+    # Unique identifier for each feedback entry
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Reference to prediction
+    prediction_id = Column(String, ForeignKey("predictions.id"), nullable=False)
+
+    # Feedback data
+    is_correct = Column(Boolean, nullable=False)
+    user_sentiment = Column(String(20))  # User's correction if incorrect
+    confidence_rating = Column(Integer)  # 1-5 scale
+    comment = Column(Text)
+    helpful = Column(Boolean)
+
+    # Metadata
+    session_id = Column(String(100))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModelVersion(Base):
+    """
+    Tracks different versions of the sentiment model
+    """
+    __tablename__ = "model_versions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    version_name = Column(String(50), unique=True, nullable=False)
+    description = Column(Text)
+
+    # Training metrics
+    training_data_count = Column(Integer)
+    accuracy = Column(Float)
+    precision = Column(Float)
+    recall = Column(Float)
+    f1_score = Column(Float)
+
+    # Status
+    deployment_status = Column(String(20), default="inactive")
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    deployed_at = Column(DateTime(timezone=True))
+
+
+class AccuracyMetric(Base):
+    """
+    Stores aggregated accuracy metrics over time
+    """
+    __tablename__ = "accuracy_metrics"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(DateTime, nullable=False)
+
+    # Volume metrics
+    total_predictions = Column(Integer, default=0)
+    feedback_count = Column(Integer, default=0)
+    feedback_rate = Column(Float)
+
+    # Accuracy metrics
+    correct_predictions = Column(Integer, default=0)
+    incorrect_predictions = Column(Integer, default=0)
+    accuracy = Column(Float)
+
+    # Per-sentiment accuracy
+    positive_accuracy = Column(Float)
+    negative_accuracy = Column(Float)
+    neutral_accuracy = Column(Float)
+
+    # Model version
+    model_version = Column(String(50))
+```
+
+
+6.3 Pydantic Schemas (schemas.py)
+---------------------------------
+
+```python
+# Pydantic models for request/response validation
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+
+class FeedbackCreate(BaseModel):
+    """
+    Schema for creating new feedback
+    """
+    prediction_id: str = Field(..., description="ID of the prediction")
+    is_correct: bool = Field(..., description="Whether prediction was correct")
+    user_sentiment: Optional[str] = Field(None, description="Correct sentiment if prediction wrong")
+    confidence_rating: Optional[int] = Field(None, ge=1, le=5, description="User confidence 1-5")
+    comment: Optional[str] = Field(None, max_length=500, description="Optional comment")
+    helpful: Optional[bool] = Field(None, description="Was analysis helpful")
+
+class FeedbackResponse(BaseModel):
+    """
+    Schema for feedback response
+    """
+    success: bool
+    message: str
+    feedback_id: Optional[int] = None
+
+class AccuracyStats(BaseModel):
+    """
+    Schema for accuracy statistics
+    """
+    total_predictions: int
+    feedback_count: int
+    feedback_rate: float
+    overall_accuracy: float
+    positive_accuracy: float
+    negative_accuracy: float
+    neutral_accuracy: float
+    model_version: str
+```
+
+
+6.4 Feedback API Endpoints (main.py additions)
+----------------------------------------------
+
+```python
+# New endpoints to add to main.py
+
+@app.on_event("startup")
+async def startup():
+    """
+    Initialize database connection on startup
+    """
+    await connect_db()
+    # Create tables if they don't exist
+    Base.metadata.create_all(bind=engine)
+
+@app.on_event("shutdown")
+async def shutdown():
+    """
+    Close database connection on shutdown
+    """
+    await disconnect_db()
+
+@app.post("/api/feedback", response_model=FeedbackResponse)
+async def submit_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db)):
+    """
+    Submit user feedback on a prediction
+
+    Validates feedback and stores in database for model improvement
+    """
+    try:
+        # Verify prediction exists
+        prediction = db.query(Prediction).filter(
+            Prediction.id == feedback.prediction_id
+        ).first()
+
+        if not prediction:
+            raise HTTPException(status_code=404, detail="Prediction not found")
+
+        # Validate user_sentiment if is_correct is False
+        if not feedback.is_correct and not feedback.user_sentiment:
+            raise HTTPException(
+                status_code=400,
+                detail="user_sentiment required when prediction is incorrect"
+            )
+
+        # Create feedback record
+        db_feedback = Feedback(
+            prediction_id=feedback.prediction_id,
+            is_correct=feedback.is_correct,
+            user_sentiment=feedback.user_sentiment,
+            confidence_rating=feedback.confidence_rating,
+            comment=feedback.comment,
+            helpful=feedback.helpful
+        )
+
+        db.add(db_feedback)
+        db.commit()
+        db.refresh(db_feedback)
+
+        # Update accuracy metrics asynchronously
+        update_accuracy_metrics(db)
+
+        return FeedbackResponse(
+            success=True,
+            message="Thank you for your feedback! This helps improve our model.",
+            feedback_id=db_feedback.id
+        )
+
+    except Exception as e:
+        db.rollback()
+        return FeedbackResponse(
+            success=False,
+            message=f"Error submitting feedback: {str(e)}"
+        )
+
+@app.get("/api/feedback/stats", response_model=AccuracyStats)
+async def get_accuracy_stats(db: Session = Depends(get_db)):
+    """
+    Get current accuracy statistics
+
+    Returns overall and per-sentiment accuracy metrics
+    """
+    # Get total predictions
+    total_predictions = db.query(Prediction).count()
+
+    # Get feedback count
+    feedback_count = db.query(Feedback).count()
+
+    # Calculate feedback rate
+    feedback_rate = (feedback_count / total_predictions * 100) if total_predictions > 0 else 0
+
+    # Get correct/incorrect counts
+    correct = db.query(Feedback).filter(Feedback.is_correct == True).count()
+    incorrect = db.query(Feedback).filter(Feedback.is_correct == False).count()
+
+    # Calculate overall accuracy
+    overall_accuracy = (correct / feedback_count * 100) if feedback_count > 0 else 0
+
+    # Calculate per-sentiment accuracy
+    positive_acc = calculate_sentiment_accuracy(db, "positive")
+    negative_acc = calculate_sentiment_accuracy(db, "negative")
+    neutral_acc = calculate_sentiment_accuracy(db, "neutral")
+
+    # Get current model version
+    model_version = db.query(ModelVersion).filter(
+        ModelVersion.deployment_status == "active"
+    ).first()
+
+    return AccuracyStats(
+        total_predictions=total_predictions,
+        feedback_count=feedback_count,
+        feedback_rate=round(feedback_rate, 2),
+        overall_accuracy=round(overall_accuracy, 2),
+        positive_accuracy=round(positive_acc, 2),
+        negative_accuracy=round(negative_acc, 2),
+        neutral_accuracy=round(neutral_acc, 2),
+        model_version=model_version.version_name if model_version else "v1.0.0"
+    )
+
+@app.post("/api/analyze", response_model=SentimentResponse)
+async def analyze_text_with_logging(
+    input_data: TextInput,
+    db: Session = Depends(get_db)
+):
+    """
+    Enhanced analyze endpoint that logs predictions to database
+    """
+    try:
+        # Perform sentiment analysis
+        result = analyzer.analyze_combined(input_data.text)
+
+        # Log prediction to database
+        prediction = Prediction(
+            text=input_data.text,
+            cleaned_text=result['preprocessing']['cleaned_text'],
+            predicted_sentiment=result['vader_analysis']['sentiment'],
+            vader_compound=result['vader_analysis']['compound_score'],
+            vader_positive=result['vader_analysis']['positive_score'],
+            vader_negative=result['vader_analysis']['negative_score'],
+            vader_neutral=result['vader_analysis']['neutral_score'],
+            textblob_polarity=result['textblob_analysis']['polarity'],
+            textblob_subjectivity=result['textblob_analysis']['subjectivity'],
+            confidence_score=result['confidence'],
+            final_sentiment=result['final_sentiment'],
+            model_version="v1.0.0"
+        )
+
+        db.add(prediction)
+        db.commit()
+        db.refresh(prediction)
+
+        # Add prediction ID to result
+        result['prediction_id'] = prediction.id
+
+        return SentimentResponse(success=True, data=result)
+
+    except Exception as e:
+        db.rollback()
+        return SentimentResponse(success=False, error=str(e))
+```
+
+
+================================================================================
+7. FRONTEND IMPLEMENTATION DETAILS
+================================================================================
+
+7.1 Feedback UI Component (HTML addition to index.html)
+-------------------------------------------------------
+
+Add this section after the results display:
+
+```html
+<!-- Feedback Section -->
+<div class="feedback-section">
+    <h3>Was this analysis helpful?</h3>
+    <p class="feedback-prompt">Your feedback helps improve our model</p>
+
+    <div class="feedback-buttons">
+        <button class="btn-feedback btn-correct" id="btn-correct">
+            <span class="icon">✓</span> Correct
+        </button>
+        <button class="btn-feedback btn-incorrect" id="btn-incorrect">
+            <span class="icon">✗</span> Incorrect
+        </button>
+    </div>
+
+    <!-- Correction Form (shown when user clicks Incorrect) -->
+    <div id="correction-form" class="correction-form hidden">
+        <label for="correct-sentiment">What is the correct sentiment?</label>
+        <select id="correct-sentiment" class="form-select">
+            <option value="">Select correct sentiment...</option>
+            <option value="positive">Positive</option>
+            <option value="negative">Negative</option>
+            <option value="neutral">Neutral</option>
+        </select>
+
+        <label for="feedback-comment">Additional comments (optional):</label>
+        <textarea id="feedback-comment" class="form-textarea"
+                  placeholder="Help us understand why the prediction was incorrect..."
+                  maxlength="500"></textarea>
+
+        <button id="submit-correction" class="btn btn-primary">Submit Feedback</button>
+    </div>
+
+    <!-- Feedback Confirmation -->
+    <div id="feedback-confirmation" class="feedback-confirmation hidden">
+        <span class="icon-large">🎉</span>
+        <p>Thank you for your feedback!</p>
+        <p class="small">Your input helps us improve our sentiment analysis model.</p>
+    </div>
+</div>
+
+<!-- Accuracy Statistics Display -->
+<div class="accuracy-stats">
+    <h4>Model Performance</h4>
+    <div class="stat-item">
+        <span class="stat-label">Overall Accuracy:</span>
+        <span class="stat-value" id="overall-accuracy">Loading...</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-label">Feedback Rate:</span>
+        <span class="stat-value" id="feedback-rate">Loading...</span>
+    </div>
+</div>
+```
+
+
+7.2 Feedback JavaScript Logic (additions to app.js)
+---------------------------------------------------
+
+```javascript
+// Global variable to store current prediction ID
+let currentPredictionId = null;
+
+// Load accuracy statistics on page load
+async function loadAccuracyStats() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/feedback/stats`);
+        const stats = await response.json();
+
+        document.getElementById('overall-accuracy').textContent =
+            `${stats.overall_accuracy}%`;
+        document.getElementById('feedback-rate').textContent =
+            `${stats.feedback_rate}%`;
+    } catch (error) {
+        console.error('Error loading accuracy stats:', error);
+    }
+}
+
+// Update displayResults function to store prediction ID
+function displayResults(data) {
+    // Store prediction ID
+    currentPredictionId = data.prediction_id;
+
+    // ... existing display logic ...
+
+    // Reset feedback section
+    resetFeedbackSection();
+
+    // Load current accuracy stats
+    loadAccuracyStats();
+}
+
+// Handle "Correct" button click
+document.getElementById('btn-correct').addEventListener('click', async () => {
+    await submitFeedback({
+        prediction_id: currentPredictionId,
+        is_correct: true,
+        helpful: true
+    });
+});
+
+// Handle "Incorrect" button click
+document.getElementById('btn-incorrect').addEventListener('click', () => {
+    // Show correction form
+    document.getElementById('correction-form').classList.remove('hidden');
+
+    // Hide feedback buttons
+    document.querySelector('.feedback-buttons').classList.add('hidden');
+});
+
+// Handle correction submission
+document.getElementById('submit-correction').addEventListener('click', async () => {
+    const correctSentiment = document.getElementById('correct-sentiment').value;
+    const comment = document.getElementById('feedback-comment').value;
+
+    // Validate
+    if (!correctSentiment) {
+        showError('Please select the correct sentiment');
+        return;
+    }
+
+    await submitFeedback({
+        prediction_id: currentPredictionId,
+        is_correct: false,
+        user_sentiment: correctSentiment,
+        comment: comment,
+        helpful: false
+    });
+});
+
+// Submit feedback to API
+async function submitFeedback(feedbackData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(feedbackData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show confirmation
+            document.getElementById('correction-form').classList.add('hidden');
+            document.querySelector('.feedback-buttons').classList.add('hidden');
+            document.getElementById('feedback-confirmation').classList.remove('hidden');
+
+            // Reload accuracy stats
+            loadAccuracyStats();
+        } else {
+            showError('Failed to submit feedback: ' + result.message);
+        }
+    } catch (error) {
+        showError('Error submitting feedback. Please try again.');
+        console.error('Error:', error);
+    }
+}
+
+// Reset feedback section
+function resetFeedbackSection() {
+    document.getElementById('correction-form').classList.add('hidden');
+    document.getElementById('feedback-confirmation').classList.add('hidden');
+    document.querySelector('.feedback-buttons').classList.remove('hidden');
+    document.getElementById('correct-sentiment').value = '';
+    document.getElementById('feedback-comment').value = '';
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadAccuracyStats();
+    // ... existing initialization ...
+});
+```
+
+
+================================================================================
+8. MODEL REFINEMENT STRATEGY
+================================================================================
+
+8.1 Data Preparation Pipeline
+-----------------------------
+
+Step 1: Extract Feedback Data
+```python
+def extract_feedback_data(db):
+    """
+    Extract labeled data from feedback table
+    """
+    # Query feedback with corrections
+    feedback_data = db.query(
+        Prediction.text,
+        Prediction.cleaned_text,
+        Feedback.user_sentiment,
+        Feedback.is_correct,
+        Prediction.predicted_sentiment
+    ).join(
+        Feedback, Prediction.id == Feedback.prediction_id
+    ).filter(
+        Feedback.is_correct == False  # Only incorrect predictions
+    ).all()
+
+    # Convert to training format
+    training_data = []
+    for item in feedback_data:
+        training_data.append({
+            'text': item.text,
+            'label': item.user_sentiment
+        })
+
+    return training_data
+```
+
+Step 2: Balance Dataset
+```python
+def balance_dataset(data):
+    """
+    Handle class imbalance using oversampling/undersampling
+    """
+    from collections import Counter
+    from sklearn.utils import resample
+
+    # Count samples per class
+    labels = [item['label'] for item in data]
+    class_counts = Counter(labels)
+
+    # Find majority class count
+    max_count = max(class_counts.values())
+
+    # Oversample minority classes
+    balanced_data = []
+    for sentiment in ['positive', 'negative', 'neutral']:
+        class_data = [item for item in data if item['label'] == sentiment]
+
+        if len(class_data) < max_count:
+            # Oversample
+            class_data_upsampled = resample(
+                class_data,
+                n_samples=max_count,
+                random_state=42
+            )
+            balanced_data.extend(class_data_upsampled)
+        else:
+            balanced_data.extend(class_data)
+
+    return balanced_data
+```
+
+
+8.2 Custom Lexicon Adjustment for VADER
+---------------------------------------
+
+```python
+def update_vader_lexicon(feedback_data):
+    """
+    Adjust VADER lexicon based on feedback
+    Identify words that frequently lead to misclassifications
+    """
+    from collections import defaultdict
+
+    # Track word-sentiment associations
+    word_sentiments = defaultdict(list)
+
+    for item in feedback_data:
+        tokens = item['cleaned_text'].split()
+        for token in tokens:
+            word_sentiments[token].append(item['label'])
+
+    # Identify words with strong sentiment associations
+    lexicon_updates = {}
+    for word, sentiments in word_sentiments.items():
+        if len(sentiments) >= 5:  # Minimum threshold
+            # Calculate average sentiment
+            sentiment_scores = {
+                'positive': sentiments.count('positive'),
+                'negative': sentiments.count('negative'),
+                'neutral': sentiments.count('neutral')
+            }
+
+            dominant_sentiment = max(sentiment_scores, key=sentiment_scores.get)
+
+            # Assign score
+            if dominant_sentiment == 'positive':
+                lexicon_updates[word] = 2.0
+            elif dominant_sentiment == 'negative':
+                lexicon_updates[word] = -2.0
+
+    # Update VADER lexicon
+    from nltk.sentiment.vader import SentimentIntensityAnalyzer
+    vader = SentimentIntensityAnalyzer()
+    vader.lexicon.update(lexicon_updates)
+
+    return vader
+```
+
+
+8.3 Train Custom Classifier
+---------------------------
+
+```python
+def train_custom_classifier(training_data):
+    """
+    Train a custom sentiment classifier using scikit-learn
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.pipeline import Pipeline
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import classification_report
+    import joblib
+
+    # Prepare data
+    texts = [item['text'] for item in training_data]
+    labels = [item['label'] for item in training_data]
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        texts, labels, test_size=0.2, random_state=42, stratify=labels
+    )
+
+    # Create pipeline
+    model_pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2))),
+        ('classifier', MultinomialNB())
+    ])
+
+    # Train model
+    model_pipeline.fit(X_train, y_train)
+
+    # Evaluate
+    y_pred = model_pipeline.predict(X_test)
+    print(classification_report(y_test, y_pred))
+
+    # Save model
+    joblib.dump(model_pipeline, 'custom_sentiment_model.pkl')
+
+    return model_pipeline
+```
+
+
+8.4 Ensemble Approach
+--------------------
+
+```python
+def ensemble_sentiment_analysis(text, vader_analyzer, textblob_analyzer, custom_model):
+    """
+    Combine VADER, TextBlob, and custom model predictions
+    """
+    # Get VADER prediction
+    vader_result = vader_analyzer.polarity_scores(text)
+    vader_sentiment = get_sentiment_from_vader(vader_result['compound'])
+
+    # Get TextBlob prediction
+    blob = TextBlob(text)
+    textblob_sentiment = get_sentiment_from_polarity(blob.sentiment.polarity)
+
+    # Get custom model prediction
+    custom_sentiment = custom_model.predict([text])[0]
+
+    # Voting mechanism
+    votes = [vader_sentiment, textblob_sentiment, custom_sentiment]
+    from collections import Counter
+    sentiment_counts = Counter(votes)
+
+    # Return majority vote
+    final_sentiment = sentiment_counts.most_common(1)[0][0]
+
+    # Calculate confidence based on agreement
+    agreement = sentiment_counts.most_common(1)[0][1] / len(votes)
+
+    return {
+        'sentiment': final_sentiment,
+        'confidence': agreement,
+        'individual_predictions': {
+            'vader': vader_sentiment,
+            'textblob': textblob_sentiment,
+            'custom': custom_sentiment
+        }
+    }
+```
+
+
+8.5 Automated Retraining Schedule
+---------------------------------
+
+```python
+import schedule
+import time
+
+def scheduled_model_update():
+    """
+    Scheduled task to retrain model periodically
+    """
+    # Get database session
+    db = SessionLocal()
+
+    try:
+        # Check if enough feedback collected
+        feedback_count = db.query(Feedback).filter(
+            Feedback.is_correct == False
+        ).count()
+
+        if feedback_count >= 100:  # Minimum threshold
+            print(f"Starting model retraining with {feedback_count} samples...")
+
+            # Extract data
+            training_data = extract_feedback_data(db)
+
+            # Balance dataset
+            balanced_data = balance_dataset(training_data)
+
+            # Train new model
+            new_model = train_custom_classifier(balanced_data)
+
+            # Validate new model
+            validation_accuracy = validate_model(new_model, db)
+
+            if validation_accuracy > 0.75:  # Minimum accuracy threshold
+                # Deploy new model
+                deploy_model(new_model, validation_accuracy, db)
+                print(f"New model deployed with {validation_accuracy:.2%} accuracy")
+            else:
+                print(f"New model accuracy ({validation_accuracy:.2%}) below threshold")
+        else:
+            print(f"Insufficient feedback data: {feedback_count}/100")
+
+    finally:
+        db.close()
+
+# Schedule retraining weekly
+schedule.every().sunday.at("02:00").do(scheduled_model_update)
+
+# Run scheduler in background
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(3600)  # Check every hour
+```
+
+
+================================================================================
+9. PRIVACY AND SECURITY CONSIDERATIONS
+================================================================================
+
+9.1 Data Privacy
+---------------
+
+1. Anonymous Collection:
+   - Do not store personally identifiable information (PII)
+   - Use session IDs instead of user IDs
+   - Hash IP addresses if stored
+
+2. Data Retention:
+   - Define retention policy (e.g., 90 days)
+   - Automatic cleanup of old data
+   - GDPR compliance if applicable
+
+3. User Consent:
+   - Display privacy notice on first use
+   - Allow users to opt-out of feedback collection
+   - Provide data deletion requests
+
+
+9.2 Security Measures
+--------------------
+
+1. Input Validation:
+   - Sanitize all user inputs
+   - Prevent SQL injection with parameterized queries
+   - Limit feedback text length
+
+2. Rate Limiting:
+   - Prevent spam and abuse
+   - Limit feedback submissions per session
+   - Implement CAPTCHA if needed
+
+3. Access Control:
+   - Secure admin endpoints for model management
+   - API authentication for sensitive operations
+   - Audit logging for model updates
+
+
+================================================================================
+10. TESTING AND VALIDATION
+================================================================================
+
+10.1 Feedback System Testing
+----------------------------
+
+Test Case 1: Submit Correct Feedback
+- User marks prediction as correct
+- Verify feedback stored in database
+- Confirm accuracy metrics updated
+
+Test Case 2: Submit Incorrect Feedback with Correction
+- User marks prediction as incorrect
+- User provides correct sentiment
+- Verify correction stored
+- Confirm available for model training
+
+Test Case 3: Edge Cases
+- Submit feedback without prediction ID (should fail)
+- Submit empty correction (should fail)
+- Submit duplicate feedback (should handle gracefully)
+
+
+10.2 Model Retraining Validation
+--------------------------------
+
+1. Validation Dataset:
+   - Hold out 20% of feedback data for validation
+   - Test on diverse text samples
+   - Compare with baseline model
+
+2. Metrics to Track:
+   - Accuracy, Precision, Recall, F1-Score
+   - Per-class performance
+   - Confusion matrix
+
+3. A/B Testing:
+   - Deploy new model to subset of users
+   - Compare performance metrics
+   - Gradual rollout if successful
+
+
+================================================================================
+11. DEPLOYMENT STRATEGY
+================================================================================
+
+11.1 Phased Rollout
+------------------
+
+Phase 1: Beta Testing (Week 1-2)
+- Deploy to internal users
+- Collect initial feedback
+- Monitor system performance
+- Fix critical bugs
+
+Phase 2: Limited Release (Week 3-4)
+- Deploy to 10% of users
+- Monitor accuracy improvements
+- Gather sufficient feedback data
+- Validate model retraining
+
+Phase 3: Full Deployment (Week 5+)
+- Deploy to all users
+- Enable automated retraining
+- Continuous monitoring
+- Regular model updates
+
+
+11.2 Monitoring and Maintenance
+-------------------------------
+
+1. Application Monitoring:
+   - Track API response times
+   - Monitor database performance
+   - Alert on errors
+
+2. Model Performance Monitoring:
+   - Track accuracy trends over time
+   - Monitor feedback volume
+   - Detect model degradation
+
+3. Regular Maintenance:
+   - Weekly accuracy reports
+   - Monthly model retraining
+   - Quarterly system review
+
+
+================================================================================
+12. CONCLUSION
+================================================================================
+
+12.1 Summary
+-----------
+This enhancement plan provides a comprehensive, step-by-step approach to implementing a real-time feedback feature for the Sentiment Analysis Application. The feature enables continuous model improvement through user feedback while maintaining system performance and user privacy.
+
+12.2 Expected Benefits
+---------------------
+1. Improved Accuracy: Continuous learning from real-world feedback
+2. Domain Adaptation: Model adapts to specific text types and domains
+3. User Engagement: Users feel involved in improving the system
+4. Data Collection: Build valuable labeled dataset for future improvements
+
+12.3 Success Metrics
+-------------------
+- Feedback rate > 20% of predictions
+- Accuracy improvement > 5% after first retraining
+- Model update cycle < 1 month
+- User satisfaction score > 4/5
+
+12.4 Future Enhancements
+-----------------------
+- Multi-language feedback support
+- Active learning to request feedback on uncertain predictions
+- Advanced ensemble models (BERT, transformers)
+- Real-time model updates with online learning
+- Explainable AI to show why predictions were made
+
+12.5 Timeline Summary
+--------------------
+- Week 1: Database setup and backend API development
+- Week 2: Frontend UI development
+- Week 3: Analytics and monitoring implementation
+- Week 4: Model refinement strategy implementation
+- Week 5: Testing, validation, and deployment
+
+This enhancement plan transforms the sentiment analysis application into a continuously improving system that learns from user feedback, ultimately delivering better accuracy and user satisfaction.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+
+Assignment 2 - PS-9 | Task B
+M.Tech. in AIML - NLP Applications
+Course Code: S1-25_AIMLCZG519
+BITS Pilani - Work Integrated Learning Programmes
