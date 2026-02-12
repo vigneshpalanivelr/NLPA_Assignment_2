@@ -221,6 +221,79 @@ FastAPI provides automatic interactive API documentation:
 - VADER weighted more heavily for robustness
 - Confidence score based on agreement between methods
 
+## Test Examples
+
+To quickly test all features of the application, use these comprehensive test inputs:
+
+### Test Case 1: Product Review (Mixed Sentiment)
+```
+Just received my new laptop from https://example.com and WOW!!! 🎉 @TechReviewer you were RIGHT about this! The display is STUNNING and the battery lasts forever 😍 But honestly, the keyboard feels cheap and the touchpad is terrible 😞 Price was $1299 which seems high. Overall it's okay I guess... 7/10 would maybe recommend? #TechReview #Laptop
+```
+**Tests:** Mixed sentiment, emoticons, URL/mention removal, capitalization, numbers, hashtags
+
+### Test Case 2: Social Media Rant (Sarcasm Detection)
+```
+OMG this is just PERFECT!!! 🙄 Ordered from www.store.com 3 weeks ago and FINALLY got it today! And guess what? IT'S BROKEN!!! 😡😡😡 Customer service at @BadCompany was sooooo helpful... NOT!!! Spent $500 on this garbage. Yeah, AMAZING quality control guys! 10/10 disappointment! Never shopping here again!!! #Scam #Disappointed #WorstEver
+```
+**Tests:** Heavy sarcasm, ALL CAPS, multiple emoticons, elongated words (sooooo), fake positive words
+
+### Test Case 3: Detailed Multi-Aspect Review
+```
+After using this smartphone for 2 months, here's my honest review: The camera quality is EXCEPTIONAL! 📸 Best I've seen under $800. @Samsung really nailed it there! BUT... the battery life is disappointing 😕 barely lasts 6 hours with normal use. Screen is gorgeous (6.5" AMOLED) but it scratches too easily. Performance: 10/10, Design: 8/10, Battery: 3/10, Camera: 9/10. Customer support via https://support.example.com was pretty good tho. Would I recommend? Depends on your priorities I guess 🤷‍♂️ #SmartphoneReview #TechLife #Mixed
+```
+**Tests:** Multiple aspects, mixed sentiments, technical specs, ratings, informal language
+
+### Test Case 4: Restaurant Review (Emotional + Comparative)
+```
+Visited Mario's Restaurant last night (www.mariosrest.com) and what a DISASTER!!! 😤 Food was cold, service was TERRIBLE, and they charged us $150!!! The pasta was undercooked, the wine was warm 🍷😒, and don't even get me started on the dessert - looked NOTHING like the photos! @ChefMario seriously?!? My previous visit 2 years ago was amazing but this time... HORRIBLE! The only good thing was the breadsticks lol 😅 Save your money and go to Luigi's instead! Rating: 2/10 ⭐ #FoodReview #Disappointed #NeverAgain
+```
+**Tests:** Strong negative with one positive element, comparative sentiment, multiple aspects, alternative recommendation
+
+### Test Case 5: Tech Support Experience (Professional + Frustrated)
+```
+Been trying to fix my router for 3 DAYS!!! 😫 Contacted support at support@techco.com and chatted with @TechSupport247... The first agent was helpful and professional 👍 (thank you Sarah!) but the second one had NO IDEA what they were doing 🤦‍♂️ Spent 2.5 hours on hold listening to terrible music. Finally got it working but ONLY because I found the solution myself on https://forums.techhelp.com/fix-guide!!! Cost me $89 for "premium support" that was basically useless. Mixed feelings: great product, AWFUL support. 6/10 overall. #TechSupport #CustomerService #Frustrating
+```
+**Tests:** Mixed sentiment (product vs support), emotional progression, email handling, gratitude mixed with frustration
+
+### Test Case 6: Travel Experience (Narrative Style)
+```
+Just got back from my trip booked via www.travelsite.com 🏖️ The flight with @AirlineXYZ was delayed 4 hours (UGH! 😒) and lost my luggage BUT the hotel was ABSOLUTELY STUNNING!!! 🌟 Beach view was incredible, staff were super friendly, and the food... OMG THE FOOD!!! 😍🍽️ Best seafood ever! However, paid $2000 total and the wifi was TERRIBLE and AC didn't work properly 😓 Would I go again? Maybe, but definitely using a different airline! The destination itself: 10/10 ⭐⭐⭐⭐⭐ Travel experience: 5/10 😐 #Travel #VacationMode #MixedBag
+```
+**Tests:** Journey narrative, extreme positive and negative in same text, multiple service providers, separate ratings
+
+### Test Case 7: Short But Complex (Contradictory Language)
+```
+Bought from @Store for $50 😅 It's terribly good! Like, I hate how much I love it??? Quality is awful... awfully AMAZING!!! 🤯 Check it www.example.com 8/10 would confuse again lol #Weird
+```
+**Tests:** Contradictory language, sarcasm, irony, informal expressions, short but feature-dense
+
+### Quick Test Suite (Simple Examples)
+
+**Strong Positive:**
+```
+Amazing product! Exceeded my expectations! 😊👍 Highly recommended!
+```
+
+**Strong Negative:**
+```
+Terrible quality. Very disappointed. Waste of money. 😡
+```
+
+**Neutral:**
+```
+The product arrived. It works as described. Standard quality.
+```
+
+**Features Tested:**
+- ✅ Text preprocessing (tokenization, lemmatization, cleaning)
+- ✅ VADER sentiment analysis (handles emoticons, caps, punctuation)
+- ✅ TextBlob sentiment analysis (polarity and subjectivity)
+- ✅ Combined confidence scoring
+- ✅ URL, mention (@), and hashtag (#) removal
+- ✅ Word count comparison (original vs processed)
+- ✅ Visualization with Chart.js
+- ✅ Detailed result breakdown
+
 ## Configuration for OSHA Cloud Lab
 
 To run on BITS OSHA Cloud Lab:

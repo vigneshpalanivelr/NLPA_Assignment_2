@@ -136,6 +136,9 @@ class TextPreprocessor:
         Returns:
             dict: Dictionary containing original text, cleaned text, and processed tokens
         """
+        # Count words in original text (split by whitespace)
+        original_word_count = len(text.split())
+
         # Clean the text
         cleaned_text = self.clean_text(text)
 
@@ -156,7 +159,9 @@ class TextPreprocessor:
 
         return {
             'original_text': text,
+            'original_word_count': original_word_count,
             'cleaned_text': cleaned_text,
             'tokens': tokens,
+            'token_count': len(tokens),
             'processed_text': ' '.join(tokens)
         }

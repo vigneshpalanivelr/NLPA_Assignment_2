@@ -121,9 +121,10 @@ class SentimentAnalyzer:
         return {
             'text': text,
             'preprocessing': {
+                'original_word_count': preprocessed['original_word_count'],
                 'cleaned_text': preprocessed['cleaned_text'],
                 'tokens': preprocessed['tokens'],
-                'token_count': len(preprocessed['tokens'])
+                'token_count': preprocessed['token_count']
             },
             'vader_analysis': vader_results,
             'textblob_analysis': textblob_results,

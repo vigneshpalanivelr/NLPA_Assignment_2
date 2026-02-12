@@ -275,7 +275,19 @@ function displayResults(data) {
     document.getElementById('original-text').textContent = data.text;
     document.getElementById('cleaned-text').textContent = data.preprocessing.cleaned_text || 'N/A';
     document.getElementById('tokens').textContent = data.preprocessing.tokens.join(', ') || 'N/A';
-    document.getElementById('token-count').textContent = data.preprocessing.token_count;
+
+    // Update word counts and calculate reduction
+    const originalWordCount = data.preprocessing.original_word_count;
+    const tokenCount = data.preprocessing.token_count;
+    const wordsRemoved = originalWordCount - tokenCount;
+    const reductionPercent = originalWordCount > 0
+        ? Math.round((wordsRemoved / originalWordCount) * 100)
+        : 0;
+
+    document.getElementById('original-word-count').textContent = originalWordCount;
+    document.getElementById('token-count').textContent = tokenCount;
+    document.getElementById('words-removed').textContent =
+        `${wordsRemoved} (${reductionPercent}% reduction)`;
 
     // Create sentiment visualization chart
     createSentimentChart(data.sentiment_scores);

@@ -388,6 +388,11 @@ body {
     color: var(--text-primary);
 }
 
+.score-value.reduction {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
 /* Preprocessing info */
 .preprocessing-info {
     margin-top: 2rem;
