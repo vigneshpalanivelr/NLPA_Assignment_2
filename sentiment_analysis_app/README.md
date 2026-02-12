@@ -1,37 +1,46 @@
 # Sentiment Analysis Application
 
-A web-based sentiment analysis application that uses Natural Language Processing (NLP) techniques to analyze the sentiment of user-provided text. The application classifies text as positive, negative, or neutral using VADER and TextBlob sentiment analyzers.
+A web-based sentiment analysis application powered by **Deep Learning** that uses state-of-the-art Natural Language Processing (NLP) techniques to analyze the sentiment of user-provided text. The application classifies text as positive, negative, or neutral using **DistilBERT**, a transformer-based model from Hugging Face.
 
 ## Features
 
 - **Web Interface**: Intuitive UI for text input or file upload
-- **Multiple Input Methods**: Direct text entry or upload .txt files
-- **Advanced NLP Processing**:
-  - Text preprocessing (tokenization, stemming, lemmatization)
-  - VADER sentiment analysis (optimized for social media text)
-  - TextBlob sentiment analysis (general purpose)
-  - Combined analysis for improved accuracy
+- **Multiple Input Methods**: Direct text entry or upload .txt files (up to 1MB)
+- **Advanced Deep Learning NLP**:
+  - **DistilBERT Transformer Model**: Pre-trained BERT model fine-tuned for sentiment analysis
+  - Context-aware bidirectional text understanding
+  - Probability distributions for positive, negative, and neutral sentiment
+  - Analysis of both original and preprocessed text for comparison
+- **Detailed Text Preprocessing Pipeline**:
+  - 6-step preprocessing visualization with token counts
+  - Text cleaning (lowercase, URL/mention removal, special character filtering)
+  - Tokenization using NLTK
+  - Stopword removal
+  - Lemmatization for word normalization
+  - Step-by-step transparency showing each transformation
 - **Visual Results**:
-  - Color-coded sentiment badges
-  - Confidence score visualization
-  - Interactive bar charts using Chart.js
-  - Detailed score breakdowns
-- **Preprocessing Transparency**: View cleaned text, tokens, and processing steps
+  - Color-coded sentiment badges (Positive/Negative/Neutral)
+  - Model confidence score with progress bar
+  - Interactive bar charts showing probability distributions
+  - Detailed BERT analysis for original and cleaned text
+  - Preprocessing summary with word count reduction statistics
+- **Model Information**: Displays which BERT variant is being used with full transparency
 
 ## Technology Stack
 
 ### Backend
 - **FastAPI**: Modern, fast web framework for building APIs
+- **PyTorch**: Deep learning framework
+- **Transformers (Hugging Face)**: Pre-trained transformer models
+- **DistilBERT**: Distilled BERT model fine-tuned for sentiment analysis
 - **NLTK**: Natural Language Toolkit for text preprocessing
-- **VADER**: Valence Aware Dictionary and sEntiment Reasoner
-- **TextBlob**: Python library for processing textual data
 - **Uvicorn**: ASGI server for running FastAPI
 
 ### Frontend
-- **HTML5**: Semantic markup
-- **CSS3**: Modern styling with CSS Grid and Flexbox
+- **HTML5**: Semantic markup with detailed step-by-step displays
+- **CSS3**: Modern styling with CSS Grid, Flexbox, and custom preprocessing step designs
 - **Vanilla JavaScript**: No framework dependencies
-- **Chart.js**: Data visualization library
+- **Chart.js**: Data visualization library for sentiment distribution
 
 ## Project Structure
 
@@ -194,32 +203,77 @@ FastAPI provides automatic interactive API documentation:
 
 ## NLP Techniques Used
 
-### 1. Text Preprocessing
+### 1. Text Preprocessing (6-Step Pipeline)
 
-- **Tokenization**: Breaking text into individual words
-- **Lowercasing**: Normalizing text to lowercase
-- **Special Character Removal**: Removing URLs, mentions, special characters
-- **Stopword Removal**: Removing common words with little semantic value
-- **Lemmatization**: Reducing words to their base form
-- **Stemming**: Alternative word reduction technique
+The application provides detailed visibility into each preprocessing step:
 
-### 2. Sentiment Analysis
+**Step 1: Original Text**
+- Raw input text as provided by the user
+- Displays original word count
 
-**VADER (Valence Aware Dictionary and sEntiment Reasoner)**
-- Rule-based sentiment analysis
-- Optimized for social media text
-- Handles emoticons, slang, and intensity modifiers
-- Provides compound, positive, negative, and neutral scores
+**Step 2: Text Cleaning**
+- **Lowercasing**: Normalizing all text to lowercase
+- **URL Removal**: Removing http/https/www links
+- **Mention Removal**: Removing @mentions and #hashtags
+- **Special Character Removal**: Filtering out numbers, punctuation, and special symbols
+- Preserves only alphabetic characters and spaces
 
-**TextBlob**
-- Pattern-based sentiment analysis
-- Provides polarity (sentiment) and subjectivity scores
-- Good for general text analysis
+**Step 3: Tokenization**
+- Breaking cleaned text into individual words (tokens)
+- Uses NLTK's word_tokenize function
+- Displays all tokens with count
 
-**Combined Approach**
-- Uses both VADER and TextBlob
-- VADER weighted more heavily for robustness
-- Confidence score based on agreement between methods
+**Step 4: Stopword Removal**
+- Removing common English words with little semantic value
+- Uses NLTK's stopwords corpus
+- Shows tokens remaining after removal
+
+**Step 5: Lemmatization**
+- Reducing words to their dictionary base form (lemma)
+- "running" → "run", "better" → "good"
+- Uses NLTK's WordNetLemmatizer
+- Alternative: Stemming (Porter Stemmer) for aggressive word reduction
+
+**Step 6: Final Cleaned Tokens**
+- Final processed tokens ready for analysis
+- Summary showing: original count, final count, words removed, and reduction percentage
+
+### 2. Sentiment Analysis - Deep Learning with BERT
+
+**DistilBERT (Distilled Bidirectional Encoder Representations from Transformers)**
+
+Model Details:
+- **Full Name**: distilbert-base-uncased-finetuned-sst-2-english
+- **Source**: Hugging Face Transformers library
+- **Architecture**: Transformer-based neural network (distilled from BERT)
+- **Training**: Pre-trained on large text corpora, fine-tuned on Stanford Sentiment Treebank (SST-2)
+- **Framework**: PyTorch
+
+Key Advantages:
+- **Context-Aware**: Understands word meaning based on surrounding context using bidirectional attention
+- **Deep Learning**: Neural network with 66M parameters (distilled from BERT's 110M)
+- **Transfer Learning**: Leverages knowledge from massive pre-training datasets
+- **Modern NLP**: State-of-the-art accuracy compared to rule-based methods
+- **Probability Distributions**: Provides confidence scores for each sentiment class
+
+How It Works:
+1. **Tokenization**: Text is tokenized using BERT's WordPiece tokenizer
+2. **Encoding**: Tokens are converted to embeddings and passed through transformer layers
+3. **Classification**: Final hidden states are fed to a classification head
+4. **Softmax**: Outputs are converted to probability distributions (positive, negative, neutral)
+5. **Prediction**: Highest probability determines the final sentiment
+
+Analysis Outputs:
+- **Positive Probability**: 0.0 to 1.0 (confidence in positive sentiment)
+- **Negative Probability**: 0.0 to 1.0 (confidence in negative sentiment)
+- **Neutral Probability**: Computed when positive and negative are both moderate
+- **Final Sentiment**: Classified as positive (>0.6), negative (>0.6), or neutral
+- **Confidence Score**: Highest probability value (0-100%)
+
+**Dual Analysis**:
+- Analyzes both **original text** (with emoticons, caps, punctuation)
+- Also analyzes **cleaned text** (after preprocessing)
+- Allows comparison to see preprocessing impact on predictions
 
 ## Test Examples
 
