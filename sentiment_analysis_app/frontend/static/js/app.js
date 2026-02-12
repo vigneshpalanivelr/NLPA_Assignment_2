@@ -1,6 +1,7 @@
 /**
  * Sentiment Analysis Application - Frontend JavaScript
  * Handles user interactions, API calls, and result visualization
+ * Updated for BERT-based sentiment analysis with detailed preprocessing steps
  */
 
 // Global variables
@@ -246,12 +247,14 @@ async function handleFileAnalysis() {
 }
 
 /**
- * Display analysis results
+ * Display analysis results with BERT model and detailed preprocessing steps
  */
 function displayResults(data) {
+    console.log('Results data:', data); // Debug log
+
     // Update sentiment badge with color coding
     const sentimentBadge = document.getElementById('sentiment-badge');
-    sentimentBadge.textContent = data.final_sentiment;
+    sentimentBadge.textContent = data.final_sentiment.toUpperCase();
     sentimentBadge.className = `sentiment-badge ${data.final_sentiment}`;
 
     // Update confidence score
@@ -261,33 +264,25 @@ function displayResults(data) {
     confidenceBar.style.width = `${confidencePercent}%`;
     confidenceText.textContent = `${confidencePercent}%`;
 
-    // Update VADER scores
-    document.getElementById('vader-compound').textContent = data.vader_analysis.compound_score.toFixed(3);
-    document.getElementById('vader-positive').textContent = data.vader_analysis.positive_score.toFixed(3);
-    document.getElementById('vader-negative').textContent = data.vader_analysis.negative_score.toFixed(3);
-    document.getElementById('vader-neutral').textContent = data.vader_analysis.neutral_score.toFixed(3);
+    // Update BERT model information
+    document.getElementById('model-name').textContent = data.model_info.full_name;
 
-    // Update TextBlob scores
-    document.getElementById('textblob-polarity').textContent = data.textblob_analysis.polarity.toFixed(3);
-    document.getElementById('textblob-subjectivity').textContent = data.textblob_analysis.subjectivity.toFixed(3);
+    // Update BERT scores for original text
+    const bertOriginal = data.bert_analysis.original_text;
+    document.getElementById('bert-positive').textContent = bertOriginal.probabilities.positive.toFixed(4);
+    document.getElementById('bert-negative').textContent = bertOriginal.probabilities.negative.toFixed(4);
+    document.getElementById('bert-neutral').textContent = bertOriginal.probabilities.neutral.toFixed(4);
+    document.getElementById('bert-sentiment').textContent = bertOriginal.sentiment.toUpperCase();
 
-    // Update preprocessing info
-    document.getElementById('original-text').textContent = data.text;
-    document.getElementById('cleaned-text').textContent = data.preprocessing.cleaned_text || 'N/A';
-    document.getElementById('tokens').textContent = data.preprocessing.tokens.join(', ') || 'N/A';
+    // Update BERT scores for cleaned text
+    const bertCleaned = data.bert_analysis.cleaned_text;
+    document.getElementById('bert-cleaned-positive').textContent = bertCleaned.probabilities.positive.toFixed(4);
+    document.getElementById('bert-cleaned-negative').textContent = bertCleaned.probabilities.negative.toFixed(4);
+    document.getElementById('bert-cleaned-neutral').textContent = bertCleaned.probabilities.neutral.toFixed(4);
+    document.getElementById('bert-cleaned-sentiment').textContent = bertCleaned.sentiment.toUpperCase();
 
-    // Update word counts and calculate reduction
-    const originalWordCount = data.preprocessing.original_word_count;
-    const tokenCount = data.preprocessing.token_count;
-    const wordsRemoved = originalWordCount - tokenCount;
-    const reductionPercent = originalWordCount > 0
-        ? Math.round((wordsRemoved / originalWordCount) * 100)
-        : 0;
-
-    document.getElementById('original-word-count').textContent = originalWordCount;
-    document.getElementById('token-count').textContent = tokenCount;
-    document.getElementById('words-removed').textContent =
-        `${wordsRemoved} (${reductionPercent}% reduction)`;
+    // Display detailed preprocessing steps
+    displayPreprocessingSteps(data.preprocessing);
 
     // Create sentiment visualization chart
     createSentimentChart(data.sentiment_scores);
@@ -297,6 +292,53 @@ function displayResults(data) {
 
     // Scroll to results
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Display detailed preprocessing steps
+ */
+function displayPreprocessingSteps(preprocessing) {
+    const steps = preprocessing.steps;
+
+    // Step 1: Original Text
+    document.getElementById('step1-text').textContent = steps['1_original'].text;
+    document.getElementById('step1-count').textContent = `(${steps['1_original'].word_count} words)`;
+
+    // Step 2: Text Cleaning
+    document.getElementById('step2-text').textContent = steps['2_cleaned'].text || 'N/A';
+    document.getElementById('step2-count').textContent = `(${steps['2_cleaned'].word_count} words)`;
+
+    // Step 3: Tokenization
+    const tokens3 = steps['3_tokenized'].tokens;
+    document.getElementById('step3-tokens').textContent = tokens3.join(', ');
+    document.getElementById('step3-count').textContent = `(${steps['3_tokenized'].token_count} tokens)`;
+
+    // Step 4: Stopword Removal
+    const step4 = steps['4_stopwords_removed'];
+    document.getElementById('step4-description').textContent = step4.description;
+    document.getElementById('step4-tokens').textContent = step4.tokens.join(', ');
+    document.getElementById('step4-count').textContent = `(${step4.token_count} tokens)`;
+
+    // Step 5: Lemmatization/Stemming
+    const step5 = steps['5_stemmed_or_lemmatized'];
+    document.getElementById('step5-description').textContent = step5.description;
+    document.getElementById('step5-tokens').textContent = step5.tokens.join(', ');
+    document.getElementById('step5-count').textContent = `(${step5.token_count} tokens)`;
+
+    // Step 6: Final Cleaned Tokens (same as step 5)
+    document.getElementById('step6-tokens').textContent = preprocessing.tokens.join(', ');
+    document.getElementById('step6-count').textContent = `(${preprocessing.token_count} tokens)`;
+
+    // Summary Statistics
+    const originalCount = preprocessing.original_word_count;
+    const finalCount = preprocessing.token_count;
+    const removed = originalCount - finalCount;
+    const reductionPercent = originalCount > 0 ? Math.round((removed / originalCount) * 100) : 0;
+
+    document.getElementById('summary-original-count').textContent = originalCount;
+    document.getElementById('summary-final-count').textContent = finalCount;
+    document.getElementById('summary-removed-count').textContent = removed;
+    document.getElementById('summary-reduction-percent').textContent = `${reductionPercent}%`;
 }
 
 /**
@@ -316,11 +358,11 @@ function createSentimentChart(scores) {
         data: {
             labels: ['Positive', 'Negative', 'Neutral'],
             datasets: [{
-                label: 'Sentiment Scores',
+                label: 'BERT Probability Scores',
                 data: [
-                    scores.positive,
-                    scores.negative,
-                    scores.neutral
+                    scores.positive_score,
+                    scores.negative_score,
+                    scores.neutral_score
                 ],
                 backgroundColor: [
                     'rgba(16, 185, 129, 0.8)',  // Green for positive
@@ -343,12 +385,7 @@ function createSentimentChart(scores) {
                     display: false
                 },
                 title: {
-                    display: true,
-                    text: 'Sentiment Score Distribution',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
+                    display: false
                 }
             },
             scales: {
@@ -356,17 +393,20 @@ function createSentimentChart(scores) {
                     beginAtZero: true,
                     max: 1,
                     ticks: {
-                        stepSize: 0.2
+                        stepSize: 0.2,
+                        callback: function(value) {
+                            return (value * 100) + '%';
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Score'
+                        text: 'Probability'
                     }
                 },
                 x: {
                     title: {
                         display: true,
-                        text: 'Sentiment Type'
+                        text: 'Sentiment Class'
                     }
                 }
             }

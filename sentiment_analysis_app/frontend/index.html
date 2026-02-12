@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentiment Analysis Application</title>
+    <title>Sentiment Analysis Application - BERT</title>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
@@ -18,7 +18,7 @@
         <!-- Header Section -->
         <header class="header">
             <h1>Sentiment Analysis Application</h1>
-            <p class="subtitle">Analyze the sentiment of text using Natural Language Processing</p>
+            <p class="subtitle">Deep Learning based Sentiment Analysis using DistilBERT Transformer</p>
         </header>
 
         <!-- Input Section -->
@@ -35,7 +35,7 @@
                     placeholder="Enter your text here for sentiment analysis..."
                     rows="8"
                 ></textarea>
-                <button id="analyze-text-btn" class="btn btn-primary">Analyze Text</button>
+                <button id="analyze-text-btn" class="btn btn-primary">Analyze Sentiment</button>
             </div>
 
             <!-- File Upload Tab -->
@@ -62,7 +62,7 @@
         <!-- Loading Indicator -->
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
-            <p>Analyzing sentiment...</p>
+            <p>Analyzing sentiment with DistilBERT...</p>
         </div>
 
         <!-- Results Section -->
@@ -70,13 +70,13 @@
 
             <!-- Sentiment Header -->
             <div class="sentiment-header">
-                <h2>Analysis Results</h2>
+                <h2>Sentiment Prediction</h2>
                 <div id="sentiment-badge" class="sentiment-badge"></div>
             </div>
 
             <!-- Confidence Score -->
             <div class="confidence-container">
-                <p class="confidence-label">Confidence Score:</p>
+                <p class="confidence-label">Model Confidence:</p>
                 <div class="confidence-bar-container">
                     <div id="confidence-bar" class="confidence-bar"></div>
                     <span id="confidence-text" class="confidence-text"></span>
@@ -85,70 +85,146 @@
 
             <!-- Chart Container -->
             <div class="chart-container">
+                <h3>Sentiment Distribution</h3>
                 <canvas id="sentiment-chart"></canvas>
             </div>
 
-            <!-- Detailed Scores -->
+            <!-- BERT Analysis Details -->
             <div class="scores-container">
-                <div class="score-card">
-                    <h3>VADER Analysis</h3>
-                    <div class="score-item">
-                        <span>Compound Score:</span>
-                        <span id="vader-compound" class="score-value"></span>
+                <div class="score-card full-width">
+                    <h3>🤖 BERT Model Analysis (Original Text)</h3>
+                    <div class="model-info">
+                        <span id="model-name" class="model-badge"></span>
                     </div>
                     <div class="score-item">
-                        <span>Positive:</span>
-                        <span id="vader-positive" class="score-value"></span>
+                        <span>Positive Probability:</span>
+                        <span id="bert-positive" class="score-value positive-score"></span>
                     </div>
                     <div class="score-item">
-                        <span>Negative:</span>
-                        <span id="vader-negative" class="score-value"></span>
+                        <span>Negative Probability:</span>
+                        <span id="bert-negative" class="score-value negative-score"></span>
                     </div>
                     <div class="score-item">
-                        <span>Neutral:</span>
-                        <span id="vader-neutral" class="score-value"></span>
+                        <span>Neutral Probability:</span>
+                        <span id="bert-neutral" class="score-value neutral-score"></span>
+                    </div>
+                    <div class="score-item">
+                        <span>Predicted Sentiment:</span>
+                        <span id="bert-sentiment" class="score-value bold"></span>
                     </div>
                 </div>
 
-                <div class="score-card">
-                    <h3>TextBlob Analysis</h3>
+                <div class="score-card full-width">
+                    <h3>🧹 BERT Analysis (Cleaned Text)</h3>
                     <div class="score-item">
-                        <span>Polarity:</span>
-                        <span id="textblob-polarity" class="score-value"></span>
+                        <span>Positive Probability:</span>
+                        <span id="bert-cleaned-positive" class="score-value positive-score"></span>
                     </div>
                     <div class="score-item">
-                        <span>Subjectivity:</span>
-                        <span id="textblob-subjectivity" class="score-value"></span>
+                        <span>Negative Probability:</span>
+                        <span id="bert-cleaned-negative" class="score-value negative-score"></span>
+                    </div>
+                    <div class="score-item">
+                        <span>Neutral Probability:</span>
+                        <span id="bert-cleaned-neutral" class="score-value neutral-score"></span>
+                    </div>
+                    <div class="score-item">
+                        <span>Predicted Sentiment:</span>
+                        <span id="bert-cleaned-sentiment" class="score-value bold"></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Preprocessing Info -->
+            <!-- Detailed Preprocessing Steps -->
             <div class="preprocessing-info">
-                <h3>Text Preprocessing Details</h3>
-                <div class="info-item">
-                    <span>Original Text:</span>
-                    <p id="original-text" class="text-display"></p>
+                <h3>📋 Text Preprocessing Details (Step-by-Step)</h3>
+
+                <!-- Step 1: Original Text -->
+                <div class="preprocessing-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 1</span>
+                        <span class="step-title">Original Text</span>
+                        <span id="step1-count" class="step-count"></span>
+                    </div>
+                    <p id="step1-text" class="text-display"></p>
                 </div>
-                <div class="info-item">
-                    <span>Cleaned Text:</span>
-                    <p id="cleaned-text" class="text-display"></p>
+
+                <!-- Step 2: Text Cleaning -->
+                <div class="preprocessing-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 2</span>
+                        <span class="step-title">Text Cleaning</span>
+                        <span id="step2-count" class="step-count"></span>
+                    </div>
+                    <p class="step-description">Lowercase conversion, URL removal, mention/hashtag removal, special character removal</p>
+                    <p id="step2-text" class="text-display"></p>
                 </div>
-                <div class="info-item">
-                    <span>Tokens:</span>
-                    <p id="tokens" class="text-display"></p>
+
+                <!-- Step 3: Tokenization -->
+                <div class="preprocessing-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 3</span>
+                        <span class="step-title">Tokenization</span>
+                        <span id="step3-count" class="step-count"></span>
+                    </div>
+                    <p class="step-description">Split text into individual words/tokens</p>
+                    <p id="step3-tokens" class="text-display tokens"></p>
                 </div>
-                <div class="info-item">
-                    <span>Original Word Count:</span>
-                    <span id="original-word-count" class="score-value"></span>
+
+                <!-- Step 4: Stopword Removal -->
+                <div class="preprocessing-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 4</span>
+                        <span class="step-title">Stopword Removal</span>
+                        <span id="step4-count" class="step-count"></span>
+                    </div>
+                    <p id="step4-description" class="step-description"></p>
+                    <p id="step4-tokens" class="text-display tokens"></p>
                 </div>
-                <div class="info-item">
-                    <span>Token Count (After Preprocessing):</span>
-                    <span id="token-count" class="score-value"></span>
+
+                <!-- Step 5: Lemmatization/Stemming -->
+                <div class="preprocessing-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 5</span>
+                        <span class="step-title">Lemmatization/Stemming</span>
+                        <span id="step5-count" class="step-count"></span>
+                    </div>
+                    <p id="step5-description" class="step-description"></p>
+                    <p id="step5-tokens" class="text-display tokens"></p>
                 </div>
-                <div class="info-item">
-                    <span>Words Removed:</span>
-                    <span id="words-removed" class="score-value reduction"></span>
+
+                <!-- Step 6: Final Cleaned Tokens -->
+                <div class="preprocessing-step final-step">
+                    <div class="step-header">
+                        <span class="step-number">Step 6</span>
+                        <span class="step-title">Final Cleaned Tokens</span>
+                        <span id="step6-count" class="step-count"></span>
+                    </div>
+                    <p class="step-description">Tokens ready for analysis</p>
+                    <p id="step6-tokens" class="text-display tokens"></p>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="preprocessing-summary">
+                    <h4>Preprocessing Summary</h4>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Original Word Count:</span>
+                            <span id="summary-original-count" class="summary-value"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Final Token Count:</span>
+                            <span id="summary-final-count" class="summary-value"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Words Removed:</span>
+                            <span id="summary-removed-count" class="summary-value reduction"></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Reduction:</span>
+                            <span id="summary-reduction-percent" class="summary-value reduction"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -164,7 +240,7 @@
         <!-- Footer -->
         <footer class="footer">
             <p>M.Tech. AIML - NLP Applications | Assignment 2 - PS-9</p>
-            <p>Sentiment Analysis using NLTK VADER and TextBlob</p>
+            <p>Sentiment Analysis using DistilBERT Transformer (PyTorch + Hugging Face)</p>
         </footer>
     </div>
 

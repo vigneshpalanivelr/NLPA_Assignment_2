@@ -1,122 +1,128 @@
 """
-Sentiment Analyzer Module
-This module implements sentiment analysis using multiple NLP techniques:
-- VADER (Valence Aware Dictionary and sEntiment Reasoner) for social media text
-- TextBlob for general text sentiment analysis
+Sentiment Analyzer Module using Deep Learning
+This module implements sentiment analysis using:
+- DistilBERT (Transformer-based model from Hugging Face)
+- TensorFlow backend via transformers library
+- Pre-trained on sentiment analysis tasks
 """
 
-import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from textblob import TextBlob
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from preprocessing import TextPreprocessor
-
-# Download VADER lexicon
-try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
-except LookupError:
-    nltk.download('vader_lexicon')
+import warnings
+warnings.filterwarnings('ignore')
 
 
 class SentimentAnalyzer:
     """
-    A class to perform sentiment analysis on text using multiple approaches
+    A class to perform sentiment analysis using DistilBERT transformer model
     """
 
     def __init__(self):
         """
-        Initialize sentiment analyzer with VADER and TextPreprocessor
+        Initialize sentiment analyzer with DistilBERT model and preprocessor
         """
-        self.vader_analyzer = SentimentIntensityAnalyzer()
+        # Use DistilBERT fine-tuned for sentiment analysis
+        self.model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+
+        print(f"Loading BERT model: {self.model_name}...")
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+        print("BERT model loaded successfully!")
+
+        # Set model to evaluation mode
+        self.model.eval()
+
+        # Initialize text preprocessor
         self.preprocessor = TextPreprocessor()
 
-    def analyze_vader(self, text):
+        # Label mapping for the model
+        self.label_map = {0: 'negative', 1: 'positive'}
+
+    def analyze_with_bert(self, text):
         """
-        Analyze sentiment using VADER (best for social media and short text)
+        Analyze sentiment using DistilBERT transformer model
 
         Args:
             text (str): Input text to analyze
 
         Returns:
-            dict: Sentiment scores including compound, positive, negative, neutral
+            dict: Sentiment prediction with probabilities for each class
         """
-        scores = self.vader_analyzer.polarity_scores(text)
+        # Tokenize the input text for BERT
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=512,
+            padding=True
+        )
 
-        # Determine overall sentiment based on compound score
-        if scores['compound'] >= 0.05:
+        # Get model predictions
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+
+        # Extract probabilities
+        probs = predictions[0].tolist()
+        negative_prob = probs[0]
+        positive_prob = probs[1]
+
+        # Calculate neutral score (when positive and negative are both moderate)
+        # If both positive and negative are close, it indicates neutrality
+        neutral_prob = 1.0 - max(positive_prob, negative_prob)
+
+        # Determine primary sentiment
+        if positive_prob > 0.6:
             sentiment = 'positive'
-        elif scores['compound'] <= -0.05:
+            confidence = positive_prob
+        elif negative_prob > 0.6:
             sentiment = 'negative'
+            confidence = negative_prob
         else:
             sentiment = 'neutral'
+            confidence = neutral_prob
 
         return {
-            'method': 'VADER',
+            'method': 'DistilBERT (Transformer)',
+            'model': self.model_name,
             'sentiment': sentiment,
-            'compound_score': scores['compound'],
-            'positive_score': scores['pos'],
-            'negative_score': scores['neg'],
-            'neutral_score': scores['neu']
-        }
-
-    def analyze_textblob(self, text):
-        """
-        Analyze sentiment using TextBlob (general purpose)
-
-        Args:
-            text (str): Input text to analyze
-
-        Returns:
-            dict: Sentiment scores including polarity and subjectivity
-        """
-        blob = TextBlob(text)
-        polarity = blob.sentiment.polarity
-        subjectivity = blob.sentiment.subjectivity
-
-        # Determine sentiment based on polarity
-        if polarity > 0.1:
-            sentiment = 'positive'
-        elif polarity < -0.1:
-            sentiment = 'negative'
-        else:
-            sentiment = 'neutral'
-
-        return {
-            'method': 'TextBlob',
-            'sentiment': sentiment,
-            'polarity': polarity,
-            'subjectivity': subjectivity
+            'confidence': round(confidence, 4),
+            'probabilities': {
+                'positive': round(positive_prob, 4),
+                'negative': round(negative_prob, 4),
+                'neutral': round(neutral_prob, 4)
+            },
+            'scores': {
+                'positive_score': round(positive_prob, 4),
+                'negative_score': round(negative_prob, 4),
+                'neutral_score': round(neutral_prob, 4)
+            }
         }
 
     def analyze_combined(self, text):
         """
-        Perform comprehensive sentiment analysis using both VADER and TextBlob
-        Also applies preprocessing to the text
+        Perform comprehensive sentiment analysis using BERT
+        Also applies detailed preprocessing to the text
 
         Args:
             text (str): Input text to analyze
 
         Returns:
-            dict: Complete analysis results including preprocessing and both methods
+            dict: Complete analysis results including preprocessing and BERT prediction
         """
-        # Preprocess the text
+        # Preprocess the text with detailed steps
         preprocessed = self.preprocessor.preprocess(text)
 
-        # Analyze using VADER (on original text - VADER works better with original punctuation)
-        vader_results = self.analyze_vader(text)
+        # Analyze using BERT (on original text - BERT handles its own tokenization)
+        bert_results = self.analyze_with_bert(text)
 
-        # Analyze using TextBlob (on cleaned text)
-        textblob_results = self.analyze_textblob(preprocessed['cleaned_text'])
+        # Also analyze the cleaned text for comparison
+        bert_results_cleaned = self.analyze_with_bert(preprocessed['cleaned_text'])
 
-        # Determine final sentiment by combining both methods
-        # VADER is weighted more heavily as it's more robust for varied text types
-        final_sentiment = self._determine_final_sentiment(
-            vader_results['sentiment'],
-            textblob_results['sentiment'],
-            vader_results['compound_score']
-        )
-
-        # Calculate confidence score
-        confidence = self._calculate_confidence(vader_results, textblob_results)
+        # Use the original text analysis as primary, but note if cleaned gives different result
+        primary_sentiment = bert_results['sentiment']
+        confidence = bert_results['confidence']
 
         return {
             'text': text,
@@ -124,66 +130,23 @@ class SentimentAnalyzer:
                 'original_word_count': preprocessed['original_word_count'],
                 'cleaned_text': preprocessed['cleaned_text'],
                 'tokens': preprocessed['tokens'],
-                'token_count': preprocessed['token_count']
+                'token_count': preprocessed['token_count'],
+                'steps': preprocessed['steps']  # Detailed preprocessing steps
             },
-            'vader_analysis': vader_results,
-            'textblob_analysis': textblob_results,
-            'final_sentiment': final_sentiment,
+            'bert_analysis': {
+                'original_text': bert_results,
+                'cleaned_text': bert_results_cleaned
+            },
+            'final_sentiment': primary_sentiment,
             'confidence': confidence,
-            'sentiment_scores': {
-                'positive': vader_results['positive_score'],
-                'negative': vader_results['negative_score'],
-                'neutral': vader_results['neutral_score']
+            'sentiment_scores': bert_results['scores'],
+            'model_info': {
+                'name': 'DistilBERT',
+                'full_name': self.model_name,
+                'type': 'Transformer-based Deep Learning',
+                'framework': 'PyTorch/Transformers'
             }
         }
-
-    def _determine_final_sentiment(self, vader_sentiment, textblob_sentiment, compound_score):
-        """
-        Determine final sentiment by combining VADER and TextBlob results
-
-        Args:
-            vader_sentiment (str): VADER sentiment result
-            textblob_sentiment (str): TextBlob sentiment result
-            compound_score (float): VADER compound score
-
-        Returns:
-            str: Final sentiment classification
-        """
-        # If both agree, return that sentiment
-        if vader_sentiment == textblob_sentiment:
-            return vader_sentiment
-
-        # If they disagree, use VADER's result if compound score is strong
-        if abs(compound_score) > 0.3:
-            return vader_sentiment
-
-        # Otherwise, default to neutral for ambiguous cases
-        return 'neutral'
-
-    def _calculate_confidence(self, vader_results, textblob_results):
-        """
-        Calculate confidence score based on agreement between methods
-
-        Args:
-            vader_results (dict): VADER analysis results
-            textblob_results (dict): TextBlob analysis results
-
-        Returns:
-            float: Confidence score between 0 and 1
-        """
-        # Check if sentiments agree
-        agreement = 1.0 if vader_results['sentiment'] == textblob_results['sentiment'] else 0.5
-
-        # Factor in the strength of VADER compound score
-        vader_strength = abs(vader_results['compound_score'])
-
-        # Factor in TextBlob polarity strength
-        textblob_strength = abs(textblob_results['polarity'])
-
-        # Calculate weighted confidence
-        confidence = (agreement * 0.4) + (vader_strength * 0.4) + (textblob_strength * 0.2)
-
-        return round(min(confidence, 1.0), 2)
 
     def analyze_batch(self, texts):
         """
